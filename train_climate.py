@@ -133,10 +133,7 @@ def parse_record(filename, transpose=True):
   if transpose:
     image = np.transpose(image, [1,2,0])
     label = np.transpose(label, [1,2,0])
-
-  image.set_shape([None, None, _DEPTH])
-  label.set_shape([None, None, 1])
-
+    
   return image, label
 
 
@@ -196,7 +193,9 @@ def input_fn(is_training, data_dir, batch_size, minvals, maxvals, num_epochs=1):
   # epochs from blending together.
   dataset = dataset.repeat(num_epochs)
   dataset = dataset.batch(batch_size)
-
+  
+  print("DSET OUTPUT SHAPES ", dataset.output_shapes)
+  
   iterator = dataset.make_one_shot_iterator()
   images, labels = iterator.get_next()
 

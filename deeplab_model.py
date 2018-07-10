@@ -160,7 +160,7 @@ def deeplabv3_plus_model_fn(features, labels, mode, params):
     features = features['feature']
   
   images = tf.cast(
-            tf.map_fn(lambda feat: preprocessing.minmax_image_subtraction(feat, params['minvals'], params['maxvals']), features), tf.float32)
+            tf.map_fn(lambda feat: tf.py_func(preprocessing.minmax_image_subtraction, [feat, params['minvals'], params['maxvals']], tf.float32), features), tf.float32)
 
   network = deeplab_v3_plus_generator(params['num_classes'],
                                       params['output_stride'],

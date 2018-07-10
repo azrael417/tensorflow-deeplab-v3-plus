@@ -134,9 +134,6 @@ def minmax_image_subtraction(image, minvals, maxvals):
       than three or if the number of channels in `image` doesn't match the
       number of values in `means`.
   """
-  
-  print(image.get_shape())
-  
   if image.get_shape().ndims != 3:
     raise ValueError('Input must be of size [height, width, C>0]')
   num_channels = image.get_shape().as_list()[-1]
