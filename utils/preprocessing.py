@@ -1,8 +1,12 @@
 """Utility functions for preprocessing data sets."""
 
-from PIL import Image
+try:
+  from PIL import Image
+except:
+  print("Warning, could not find PIL module.")
 import numpy as np
 import tensorflow as tf
+import h5py as h5
 
 _R_MEAN = 123.68
 _G_MEAN = 116.78
@@ -109,6 +113,41 @@ def mean_image_subtraction(image, means=(_R_MEAN, _G_MEAN, _B_MEAN)):
   channels = tf.split(axis=2, num_or_size_splits=num_channels, value=image)
   for i in range(num_channels):
     channels[i] -= means[i]
+  return tf.concat(axis=2, values=channels)
+
+
+def minmax_image_subtraction(image, minvals, maxvals):
+  """Does minmax normalization
+
+  Note that the rank of `image` must be known.
+
+  Args:
+    image: a tensor of size [height, width, C].
+    minvals: ensemble mins for pixels per channel.
+    maxvals: ensemble maxs for pixels per channel.
+
+  Returns:
+    the centered image.
+
+  Raises:
+    ValueError: If the rank of `image` is unknown, if `image` has a rank other
+      than three or if the number of channels in `image` doesn't match the
+      number of values in `means`.
+  """
+  
+  print(image.get_shape())
+  
+  if image.get_shape().ndims != 3:
+    raise ValueError('Input must be of size [height, width, C>0]')
+  num_channels = image.get_shape().as_list()[-1]
+  if len(minvals) != num_channels:
+    raise ValueError('len(minvals) must match the number of channels')
+  if len(maxvals) != num_channels:
+    raise ValueError('len(maxvals) must match the number of channels')
+
+  channels = tf.split(axis=2, num_or_size_splits=num_channels, value=image)
+  for i in range(num_channels):
+    channels[i] -= minvals[i] / (maxvals[i] - minvals[i])
   return tf.concat(axis=2, values=channels)
 
 
