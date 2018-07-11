@@ -83,6 +83,8 @@ parser.add_argument('--debug', action='store_true',
                     help='Whether to use debugger to track down bad values during training.')
 
 _NUM_CLASSES = 3
+_ORIGHEIGHT = 768
+_ORIGWIDTH = 1152
 _HEIGHT = 513
 _WIDTH = 513
 _DEPTH = 16
@@ -137,6 +139,14 @@ def parse_record(filename, transpose=True):
   return image, label
 
 
+def tensorize_record(image, label):
+  
+  image.set_shape([_ORIGHEIGHT, _ORIGWIDTH, _DEPTH])
+  label.set_shape([_ORIGHEIGHT, _ORIGWIDTH, 1])
+  
+  return image, label
+
+
 def preprocess_image(image, label, minvals, maxvals, is_training):
   """Preprocess a single image of layout [height, width, depth]."""
   if is_training:
@@ -186,19 +196,25 @@ def input_fn(is_training, data_dir, batch_size, minvals, maxvals, num_epochs=1):
 
   #map the dataset
   dataset = dataset.map(map_func=lambda dataname: tuple(tf.py_func(parse_record, [dataname, True], [tf.float32, tf.int32])), num_parallel_calls = 4)
-  dataset = dataset.map(lambda image, label: tuple(tf.py_func(preprocess_image, [image, label, minvals, maxvals, is_training], [tf.float32, tf.int32])), num_parallel_calls = 4)
+  dataset = dataset.map(map_func=lambda image, label: tuple(tf.py_func(preprocess_image, [image, label, minvals, maxvals, is_training], [tf.float32, tf.int32])), num_parallel_calls = 4)
+  dataset = dataset.map(map_func=lambda image, label: tensorize_record(image, label), num_parallel_calls = 4)
   dataset = dataset.prefetch(batch_size)
 
   # We call repeat after shuffling, rather than before, to prevent separate
   # epochs from blending together.
   dataset = dataset.repeat(num_epochs)
   dataset = dataset.batch(batch_size)
-  
-  print("DSET OUTPUT SHAPES ", dataset.output_shapes)
-  
+
   iterator = dataset.make_one_shot_iterator()
   images, labels = iterator.get_next()
-
+  
+  if is_training:
+    images.set_shape([_HEIGHT, _WIDTH, _DEPTH])
+    label.set_shape([_HEIGHT, _WIDTH, 1])
+  else:
+    images.set_shape([_ORIGHEIGHT, _ORIGWIDTH, _DEPTH])
+    label.set_shape([_ORIGHEIGHT, _ORIGWIDTH, 1])
+  
   return images, labels
 
 
